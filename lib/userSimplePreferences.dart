@@ -1,7 +1,7 @@
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:encrypted_shared_preferences/encrypted_shared_preferences.dart';
 
 class UserSimplePreferences {
-  static SharedPreferences _preferences;
+  static EncryptedSharedPreferences  _preferences;
   static const String _userKey = 'user';
   static const String _passwdKey = 'passwd';
   static const String _urlKey = 'url';
@@ -10,7 +10,7 @@ class UserSimplePreferences {
 
 
   static Future init() async =>
-      _preferences = await SharedPreferences.getInstance();
+      _preferences = await EncryptedSharedPreferences();
 
   static Future setUsername(String user) async => _preferences.setString(_userKey, user);
   static Future setUserPasswd(String passwd) async => _preferences.setString(_passwdKey, passwd);
@@ -19,10 +19,10 @@ class UserSimplePreferences {
   static Future setDataEdt(String data) async => _preferences.setString(_dataEdtKey, data);
 
 
-  static String getUsername() => _preferences.getString(_userKey);
-  static String getPasswd() => _preferences.getString(_passwdKey);
-  static String getUrl() => _preferences.getString(_urlKey);
-  static String getUrlPointage() => _preferences.getString(_urlPointageKey);
-  static String getDataEdt() => _preferences.getString(_dataEdtKey);
+  static Future<String> getUsername() async =>  _preferences.getString(_userKey);
+  static Future<String> getPasswd() async => _preferences.getString(_passwdKey);
+  static Future<String> getUrl() async => _preferences.getString(_urlKey);
+  static Future<String> getUrlPointage() async => _preferences.getString(_urlPointageKey);
+  static Future<String> getDataEdt() async => _preferences.getString(_dataEdtKey);
 
 }

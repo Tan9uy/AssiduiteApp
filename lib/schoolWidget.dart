@@ -1,16 +1,10 @@
-import 'dart:convert';
-import 'dart:ffi';
-import 'dart:io';
-
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/painting.dart';
 import 'package:flutter/rendering.dart';
-import 'package:intl/intl.dart';
-import 'package:stacked/stacked_annotations.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:vpn/courseWidget.dart';
 import 'package:vpn/userSimplePreferences.dart';
-import 'vpn.dart';
-import 'package:html/parser.dart';
 import 'package:icalendar_parser/icalendar_parser.dart';
 import 'package:http/http.dart' as http;
 import 'Dart:async' show Future;
@@ -21,7 +15,8 @@ class SchoolWidget extends StatefulWidget {
 }
 
 class _SchoolWidgetState extends State<SchoolWidget> {
-  String _url;
+  String _url = '';
+  String _edt = '';
   String contend = "";
   ICalendar _iCalendar;
   bool _isInit = false;
@@ -31,13 +26,21 @@ class _SchoolWidgetState extends State<SchoolWidget> {
   @override
   void initState() {
     super.initState();
-    _url = UserSimplePreferences.getUrl();
+    data();
     _courses = [];
   }
+  void data(){
+    Permission.storage.request().isGranted.then((value) => {
+      if (value){
+        UserSimplePreferences.getUrl().then((url) => _url = url),
+        UserSimplePreferences.getDataEdt().then( (edt) => _edt = edt)
+      }
+    });
+  }
 
-  List<Map<String, dynamic>> getEdtForToday(String edt) {
+  List<Map<String, dynamic>> getEdtForToday(String edt)  {
     if (edt == "") {
-      _iCalendar = ICalendar.fromString(UserSimplePreferences.getDataEdt());
+      _iCalendar = ICalendar.fromString(_edt);
     } else {
       _iCalendar = ICalendar.fromString(edt);
       UserSimplePreferences.setDataEdt(edt);
@@ -57,8 +60,9 @@ class _SchoolWidgetState extends State<SchoolWidget> {
   }
 
   Widget _getcourses(){
+    var courses = getEdtForToday("");
     setState(() {
-      _courses = getEdtForToday("");
+      _courses = courses;
     });
     return Text("hello");
   }
@@ -70,60 +74,7 @@ class _SchoolWidgetState extends State<SchoolWidget> {
       width: (MediaQuery.of(context).size.width),
         child : ListView(
           children: _courses
-                .map((e) => Row(
-                  children : [
-                    Expanded(
-                      child : Padding(
-                        padding : const EdgeInsets.all(8.0),
-                        child : ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            elevation: 13.0,
-                            shadowColor: Colors.black,
-                            primary : Colors.white,
-                            shape: RoundedRectangleBorder(
-                                side : BorderSide(
-                                    color : Colors.green,
-                                ),
-                                borderRadius: BorderRadius.circular(10.0),
-                            ),
-                          ),
-                          onPressed: () async {
-                            var date = e['dtstamp'];
-                          },
-
-                          child: SizedBox(
-                              height: 70.0,
-                              child: SafeArea(
-                                  child : SingleChildScrollView(
-                                      child : Column(
-                                        children: [
-                                          Padding(
-                                            padding: const EdgeInsets.all(8.0),
-                                            child: Center(
-                                              child : Text(
-                                                        e["summary"].toString(),
-                                                        style : TextStyle(
-                                                            color : Colors.black,
-                                                            fontSize: 20,
-                                                            fontWeight: FontWeight.bold,
-                                                        ),
-                                                      ),
-                                            ),
-                                          ),
-                                          Padding(
-                                            padding: const EdgeInsets.all(8.0),
-                                            child : Text(e['location']+" "+DateTime.tryParse(e["dtstart"].dt).toUtc().hour.toString(), style: TextStyle(color : Colors.black, fontSize: 17)),
-                                          ),
-                                        ],
-                                      ),
-                                  ),
-                              ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],)
-                ).toList(),
+                .map((course) => CourseWidget(course)).toList(),
           ),
     );
   }
@@ -152,16 +103,14 @@ class _SchoolWidgetState extends State<SchoolWidget> {
                         ElevatedButton(
                           onPressed: () async {
                             try {
-                              Future<http.Response> response = fetchEdt();
-                              response.then((value) =>
-                              {
-                                if (value.statusCode == 200){
-                                  setState(() {
-                                    contend = value.body;
-                                    _courses = getEdtForToday(contend);
-                                  })
-                                }
-                              });
+                              var response = await fetchEdt();
+                              if (response.statusCode == 200) {
+                                var courses = await getEdtForToday(response.body);
+                                setState(() {
+                                  contend = response.body;
+                                  _courses = courses;
+                                });
+                              }
                             } catch (error){
                               throw ErrorDescription("something when wrong went fetching edt");
                             }

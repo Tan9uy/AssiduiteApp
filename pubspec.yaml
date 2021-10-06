@@ -33,9 +33,13 @@ dependencies:
   flutter_html: ^2.0.0
   http: ^0.13.3
   stacked: ^2.1.9
-  shared_preferences: ^0.5.8
   icalendar_parser: ^0.8.1
   intl: ^0.16.1
+  flutter_local_notifications: ^4.0.1+2
+  rxdart: ^0.27.2
+  awesome_notifications: ^0.0.6+10
+  encrypted_shared_preferences: ^1.0.7
+  permission_handler: ^5.1.0+2
 
 dev_dependencies:
   flutter_test:

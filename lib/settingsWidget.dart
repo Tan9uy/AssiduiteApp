@@ -1,8 +1,10 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:vpn/stockageWidget.dart';
 import 'package:vpn/userSimplePreferences.dart';
 import 'vpn.dart';
-import 'Dart:async' show Future;
+import 'Dart:async' show Future, Timer;
 
 class SettingsWidget extends StatefulWidget {
   @override
@@ -14,84 +16,116 @@ class _SettingsWidgetState extends State<SettingsWidget> {
   String _user;
   String _passwd;
   String _url;
-  String _urlPage;
 
-  @override
-  void initState() {
-    super.initState();
-    _user = UserSimplePreferences.getUsername() ?? '';
-    _passwd = UserSimplePreferences.getPasswd() ?? '';
-    _url = UserSimplePreferences.getUrl() ?? '';
-    _urlPage = UserSimplePreferences.getUrlPointage() ?? '';
-  }
+  final TextEditingController _controllerUser = TextEditingController();
+  final TextEditingController _controllerPasswd = TextEditingController();
+  final TextEditingController _controllerUrl = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
-    return Form(
-      key: _formKey,
-      child: Padding(
-        padding: const EdgeInsets.all(8.0),
-        child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              TextFormField(
-                initialValue: _user,
-                decoration: const InputDecoration(
-                  hintText: 'Enter your user name',
+    print(_user);
+    return SizedBox(
+        height: (MediaQuery.of(context).size.height-213),
+        child: SafeArea(
+          child : SingleChildScrollView(
+            child : Form(
+              key: _formKey,
+              child: Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    TextField(
+                      controller: _controllerUser,
+                      decoration: const InputDecoration(
+                        hintText: 'Enter your user name',
+                      ),
+                      onChanged: (String user) {
+                        _user = user;
+                      },
+                    ),
+                    Container(height: 10),
+                    TextField(
+                      controller: _controllerPasswd,
+                      decoration: const InputDecoration(
+                        hintText: 'Enter your password',
+                      ),
+                      obscureText: true,
+                      onChanged: (String passwd) {
+                        _passwd = passwd;
+                      },
+                    ),
+                    Container(height: 10),
+                    TextField(
+                      controller: _controllerUrl,
+                      decoration: const InputDecoration(
+                        hintText: 'URL edt',
+                      ),
+                      onChanged: (String url) {
+                        _url = url;
+                      },
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 16.0),
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(shadowColor: Colors.black,primary : Colors.green),
+                        onPressed: () async {
+                          while (!await Permission.storage.isGranted){
+                            await Permission.storage.request();
+                            showDialog(
+                              context: context,
+                              builder: (BuildContext context) => StockageDialogWidget(),
+                            );
+                          }
+                          if (await Permission.storage.isGranted) {
+                            await UserSimplePreferences.setUsername(_user);
+                            await UserSimplePreferences.setUserPasswd(_passwd);
+                            await UserSimplePreferences.setUrl(_url);
+                          }
+                        },
+                        child: const Text('Save',style: TextStyle(color : Colors.white, fontSize: 17)),
+                      ),
+                    ),
+                  ],
                 ),
-                onChanged: (name) => setState(() => _user = name),
-            ),
-            Container(height: 10),
-            TextFormField(
-              initialValue: _passwd,
-              decoration: const InputDecoration(
-                hintText: 'Enter your password',
               ),
-              obscureText: true,
-              onChanged: (name) => setState(() => _passwd = name),
-              validator: (String value) {
-                if (value == null || value.isEmpty) {
-                  return 'Please enter your password';
-                }
-                _passwd = value;
-                return null;
-              },
-            ),
-            Container(height: 10),
-            TextFormField(
-              initialValue: _url,
-              decoration: const InputDecoration(
-                hintText: 'URL ical',
-              ),
-              onChanged: (name) => setState(() => _url = name),
-            ),
-            TextFormField(
-              initialValue: _urlPage,
-              decoration: const InputDecoration(
-                hintText: 'URL assiduite',
-              ),
-              onChanged: (name) => setState(() => _urlPage = name),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 16.0),
-              child: ElevatedButton(
-                onPressed: () async {
-                  await UserSimplePreferences.setUsername(_user);
-                  await UserSimplePreferences.setUserPasswd(_passwd);
-                  await UserSimplePreferences.setUrl(_url);
-                  await UserSimplePreferences.setUrlPointage(_urlPage);
-                  // Validate will return true if the form is valid, or false if
-                  // the form is invalid.
-                  if (_formKey.currentState.validate()) {
-                    print("Valide");
-                  }
-                },
-                child: const Text('Save'),
-              ),
-            ),
-          ],
-        ),
-      ),
+            )
+          )
+        )
     );
+  }
+
+  @override
+  void dispose() {
+    _controllerUser.dispose();
+    _controllerPasswd.dispose();
+    _controllerUrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  void initState() {
+    _controllerUser.text = '';
+    _controllerPasswd.text = '';
+    _controllerUrl.text = '';
+    data();
+    super.initState();
+  }
+  void data() async {
+    if (await Permission.storage.isGranted || await Permission.storage
+        .request()
+        .isGranted) {
+      _user = await UserSimplePreferences.getUsername();
+      _passwd = await UserSimplePreferences.getPasswd();
+      _url = await UserSimplePreferences.getUrl();
+      _controllerUser.text = _user;
+      _controllerPasswd.text = _passwd;
+      _controllerUrl.text = _url;
+      setState(() {
+        _user = _user;
+        _passwd = _passwd;
+        _url = _url;
+      });
+    }
   }
 }

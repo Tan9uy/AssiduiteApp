@@ -1,17 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-
-import 'package:html/parser.dart';
-import 'package:http/http.dart' as http;
-import 'package:stacked/stacked.dart';
-import 'package:vpn/assiduiteWidget.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:vpn/schoolWidget.dart';
 import 'package:vpn/settingsWidget.dart';
+import 'package:vpn/stockageWidget.dart';
 import 'package:vpn/userSimplePreferences.dart';
 import 'package:vpn/vpn.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 import 'Dart:async' show Future;
-import 'package:vpn/vpnWidget.dart';
 
 Future main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -42,7 +38,6 @@ class _MainWidgetState extends State<MainWidget>{
   int _selectedIndex = 0;
   static const TextStyle optionStyle =
   TextStyle(fontSize: 30, fontWeight: FontWeight.bold, color: Colors.white);
-
   String _current_status;
   Stream<String> _status;
 
@@ -55,8 +50,43 @@ class _MainWidgetState extends State<MainWidget>{
   @override
   void initState() {
     super.initState();
-    _user = UserSimplePreferences.getUsername() ?? '';
-    _passwd = UserSimplePreferences.getPasswd() ?? '';
+
+    /*
+    NotificationApi.init();
+
+    AwesomeNotifications().initialize(
+      // set the icon to null if you want to use the default app icon
+        'resource://drawable/res_app_icon',
+        [
+          NotificationChannel(
+              channelKey: 'basic_channel',
+              channelName: 'Basic notifications',
+              channelDescription: 'Notification channel for basic tests',
+              defaultColor: Color(0xFF9D50DD),
+              ledColor: Colors.white
+          )
+        ]
+    );
+
+    AwesomeNotifications().isNotificationAllowed().then((isAllowed) {
+      if (!isAllowed) {
+        // Insert here your friendly dialog box before call the request method
+        // This is very important to not harm the user experien
+        AwesomeNotifications().requestPermissionToSendNotifications();
+      }
+    });
+
+    AwesomeNotifications().actionStream.listen(
+            (receivedNotification){
+
+          Navigator.of(context).pushNamed(
+              '/NotificationPage',
+              arguments: { 'id': receivedNotification.id } // your page params. I recommend to you to pass all *receivedNotification* object
+          );
+
+        }
+    );
+     */
   }
 
   statusVpn(){
@@ -77,7 +107,6 @@ class _MainWidgetState extends State<MainWidget>{
   }
 
   static List<Widget> _widgetOptions = <Widget>[
-    AssiduiteWidget(),
     SchoolWidget(),
     SettingsWidget(),
   ];
@@ -103,9 +132,18 @@ class _MainWidgetState extends State<MainWidget>{
         ),
         floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
         floatingActionButton: FloatingActionButton(
-          onPressed: () {
+          onPressed: () async {
+            while (!await Permission.storage.isGranted){
+              await Permission.storage.request();
+              showDialog(
+                context: context,
+                builder: (BuildContext context) => StockageDialogWidget(),
+              );
+            }
+           _user = await UserSimplePreferences.getUsername();
+           _passwd = await UserSimplePreferences.getPasswd();
+
             try {
-              print("=====================================================================>"+_user+" "+_passwd);
               _status =
                   Vpn('assets/Ensimag-VPN-ETU-udp.ovpn', _user, _passwd).status;
               print(!_status_listen);
@@ -121,10 +159,6 @@ class _MainWidgetState extends State<MainWidget>{
         bottomNavigationBar: BottomNavigationBar(
           backgroundColor: Colors.green,
           items: const <BottomNavigationBarItem>[
-            BottomNavigationBarItem(
-              icon: Icon(Icons.home),
-              label: 'Assiduite',
-            ),
             BottomNavigationBarItem(
               icon: Icon(Icons.school),
               label: 'School',

@@ -22,7 +22,6 @@ class AssiduiteWidget extends StatefulWidget {
 
 class _AssiduiteWidgetState extends State<AssiduiteWidget> {
   String _url;
-  String _urlPage;
   String _user;
   String _passwd;
   String contend = "";
@@ -31,12 +30,11 @@ class _AssiduiteWidgetState extends State<AssiduiteWidget> {
 
 
   @override
-  void initState() {
+  void initState() async{
     super.initState();
-    _url = UserSimplePreferences.getUrl();
-    _urlPage = UserSimplePreferences.getUrlPointage();
-    _user = UserSimplePreferences.getUsername();
-    _passwd = UserSimplePreferences.getPasswd();
+    _url = await UserSimplePreferences.getUrl();
+    _user = await UserSimplePreferences.getUsername();
+    _passwd = await UserSimplePreferences.getPasswd();
   }
 
   String basicAuthorizationHeader(String username, String password) {
@@ -53,7 +51,7 @@ class _AssiduiteWidgetState extends State<AssiduiteWidget> {
                   onPressed: () async {
                     try {
                       final res = await http.get(
-                          Uri.parse(_urlPage),
+                          Uri.parse("https://extranet.ensimag.fr/assiduite"),
                           headers:{
                             HttpHeaders.authorizationHeader: basicAuthorizationHeader(_user, _passwd),
                           }
